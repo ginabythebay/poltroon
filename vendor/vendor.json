@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "zWcD+hiuLdxgBd4oRQnAsdNBXSc=",
+			"path": "github.com/urfave/cli",
+			"revision": "d53eb991652b1d438abdd34ce4bfa3ef1539108e",
+			"revisionTime": "2016-09-17T21:38:06Z"
+		}
+	],
+	"rootPath": "github.com/ginabythebay/poltroon"
+}
