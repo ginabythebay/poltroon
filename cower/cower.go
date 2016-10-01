@@ -47,7 +47,7 @@ func Find() (*Cower, error) {
 	return &Cower{cowerPath, makePkgPath}, nil
 }
 
-func (c *Cower) QueryUpdates() ([]Package, error) {
+func (c *Cower) QueryUpdates() ([]Update, error) {
 	cmd := exec.Command(c.cowerPath, "--update")
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
@@ -57,7 +57,7 @@ func (c *Cower) QueryUpdates() ([]Package, error) {
 	if err = cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "starting cower --update")
 	}
-	pkgs := []Package{}
+	pkgs := []Update{}
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -68,7 +68,7 @@ func (c *Cower) QueryUpdates() ([]Package, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to parse [%s]", line)
 		}
-		pkgs = append(pkgs, Package{name, curver, newver})
+		pkgs = append(pkgs, Update{name, curver, newver})
 	}
 	err = cmd.Wait()
 	// an exit code of 1 is normal if cower found something to update
@@ -136,8 +136,8 @@ func (c *Cower) Make(dir string, logDir string, name string, skippgpcheck bool) 
 	return matches[0], nil
 }
 
-// Package represents what we know about a package that can be updated
-type Package struct {
+// Update represents what we know about a package that can be updated
+type Update struct {
 	// Name is the name of this package (e.g. 'google-chrome')
 	Name string
 	// CurrentVersion is the version of this package currently installed.
@@ -146,8 +146,8 @@ type Package struct {
 	NextVersion string
 }
 
-func (p Package) String() string {
-	return fmt.Sprintf(":: %s %s -> %s", p.Name, p.CurrentVersion, p.NextVersion)
+func (u Update) String() string {
+	return fmt.Sprintf(":: %s %s -> %s", u.Name, u.CurrentVersion, u.NextVersion)
 }
 
 // see http://stackoverflow.com/questions/10385551/get-exit-code-go
