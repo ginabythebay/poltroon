@@ -1,4 +1,4 @@
-package cmd
+package exec
 
 import (
 	"bufio"
@@ -9,10 +9,11 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/ginabythebay/poltroon"
 	"github.com/pkg/errors"
 )
 
-type Cmd struct {
+type Exec struct {
 	cowerPath   string
 	makePkgPath string
 }
@@ -33,7 +34,7 @@ func findPgm(pgm string) (p string, err error) {
 }
 
 // Find finds the path to the cower command.
-func Find() (*Cmd, error) {
+func Find() (*Exec, error) {
 	cowerPath, err := findPgm("cower")
 	if err != nil {
 		return nil, errors.Wrap(err, "Look for cower here: https://aur.archlinux.org/packages/cower/")
@@ -44,11 +45,13 @@ func Find() (*Cmd, error) {
 		return nil, err
 	}
 
-	return &Cmd{cowerPath, makePkgPath}, nil
+	return &Exec{cowerPath, makePkgPath}, nil
 }
 
-func (c *Cmd) QueryUpdates() ([]Update, error) {
-	cmd := exec.Command(c.cowerPath, "--update")
+// QueryUpdates looks for already-installed but out-of-date AUR
+// packages, using the cower command.
+func (e *Exec) QueryUpdates(pkgsRoot string) ([]*poltroon.AurPackage, error) {
+	cmd := exec.Command(e.cowerPath, "--update")
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -57,7 +60,7 @@ func (c *Cmd) QueryUpdates() ([]Update, error) {
 	if err = cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "starting cower --update")
 	}
-	pkgs := []Update{}
+	pkgs := []*poltroon.AurPackage{}
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -68,7 +71,7 @@ func (c *Cmd) QueryUpdates() ([]Update, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to parse [%s]", line)
 		}
-		pkgs = append(pkgs, Update{name, curver, newver})
+		pkgs = append(pkgs, poltroon.NewAurPackage(pkgsRoot, name, curver, newver))
 	}
 	err = cmd.Wait()
 	// an exit code of 1 is normal if cower found something to update
@@ -78,8 +81,9 @@ func (c *Cmd) QueryUpdates() ([]Update, error) {
 	return pkgs, nil
 }
 
-func (c *Cmd) Fetch(dir string, logDir string, name string) error {
-	cmd := exec.Command(c.cowerPath, "--download", name)
+// Fetch fetches a package, using the cower command.
+func (e *Exec) Fetch(dir string, logDir string, name string) error {
+	cmd := exec.Command(e.cowerPath, "--download", name)
 	cmd.Dir = dir
 	stdout, err := os.Create(path.Join(logDir, "fetch.out"))
 	if err != nil {
@@ -101,8 +105,9 @@ func (c *Cmd) Fetch(dir string, logDir string, name string) error {
 	return nil
 }
 
-func (c *Cmd) Make(dir string, logDir string, name string, skippgpcheck bool) (pkgPath string, err error) {
-	cmd := exec.Command(c.makePkgPath, "--syncdeps", name)
+// Make runs makepkg on a fetched command.
+func (e *Exec) Make(dir string, logDir string, name string, skippgpcheck bool) (pkgPath string, err error) {
+	cmd := exec.Command(e.makePkgPath, "--syncdeps", name)
 	if skippgpcheck {
 		cmd.Args = append(cmd.Args, "--skippgpcheck")
 	}
@@ -134,20 +139,6 @@ func (c *Cmd) Make(dir string, logDir string, name string, skippgpcheck bool) (p
 	}
 
 	return matches[0], nil
-}
-
-// Update represents what we know about a package that can be updated
-type Update struct {
-	// Name is the name of this package (e.g. 'google-chrome')
-	Name string
-	// CurrentVersion is the version of this package currently installed.
-	CurrentVersion string
-	// NextVersion is the available version of this package
-	NextVersion string
-}
-
-func (u Update) String() string {
-	return fmt.Sprintf(":: %s %s -> %s", u.Name, u.CurrentVersion, u.NextVersion)
 }
 
 // see http://stackoverflow.com/questions/10385551/get-exit-code-go

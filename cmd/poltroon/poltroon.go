@@ -1,4 +1,4 @@
-package main
+package poltroon
 
 import (
 	"bufio"
@@ -10,7 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ginabythebay/poltroon/cmd"
+	"github.com/ginabythebay/poltroon"
+	"github.com/ginabythebay/poltroon/exec"
 	"github.com/urfave/cli"
 )
 
@@ -47,43 +48,43 @@ func main() {
 			fatal(err)
 		}
 
-		cmd, err := cmd.Find()
+		exec, err := exec.Find()
 		if err != nil {
 			fatal(err)
 		}
-		updates, err := cmd.QueryUpdates()
+		aurPkgs, err := exec.QueryUpdates(root)
 		if err != nil {
 			fatal(err)
 		}
 
 		var waitGroup sync.WaitGroup
 
-		if len(updates) == 0 {
+		if len(aurPkgs) == 0 {
 			fmt.Println("Nothing to update!")
 			os.Exit(0)
 		}
 
-		for _, u := range updates {
-			fmt.Println(u)
+		for _, a := range aurPkgs {
+			fmt.Println(a)
 		}
 
 		fmt.Println()
 		if c.Bool("noconfirm") {
 			fmt.Println("Proceeding to update all packages because --noconfirm was set...")
 		} else {
-			msg := fmt.Sprintf("Do you want to update these %d packages?", len(updates))
+			msg := fmt.Sprintf("Do you want to update these %d packages?", len(aurPkgs))
 			if !askForConfirmation(msg) {
 				os.Exit(0)
 			}
 		}
 		fmt.Println()
 
-		makeChan := make(chan *AurPackage)
+		makeChan := make(chan *poltroon.AurPackage)
 		for i := 0; i < c.Int("makers"); i++ {
 			go func() {
 				for pkg := range makeChan {
 					output(fmt.Sprintf("%s: beginning make...", pkg.Name))
-					pkgPath, err := cmd.Make(pkg.Build(), pkg.Logs(), pkg.Name, c.Bool("skippgpcheck"))
+					pkgPath, err := exec.Make(pkg.Build(), pkg.Logs(), pkg.Name, c.Bool("skippgpcheck"))
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.Name, err))
 						waitGroup.Done()
@@ -96,18 +97,18 @@ func main() {
 			}()
 		}
 
-		fetchChan := make(chan *AurPackage)
+		fetchChan := make(chan *poltroon.AurPackage)
 		for i := 0; i < c.Int("fetchers"); i++ {
 			go func() {
 				for pkg := range fetchChan {
 					output(fmt.Sprintf("%s: beginning fetch...", pkg.Name))
-					err := pkg.PreparePackageDir()
+					err := pkg.PreparePackageDir(dirMode)
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
 						waitGroup.Done()
 						continue
 					}
-					err = cmd.Fetch(pkg.Build(), pkg.Logs(), pkg.Name)
+					err = exec.Fetch(pkg.Build(), pkg.Logs(), pkg.Name)
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
 						waitGroup.Done()
@@ -119,12 +120,9 @@ func main() {
 			}()
 		}
 
-		waitGroup.Add(len(updates))
-		aurPkgs := []*AurPackage{}
-		for _, u := range updates {
-			pkg := NewAurPackage(root, u.Name)
-			aurPkgs = append(aurPkgs, pkg)
-			fetchChan <- pkg
+		waitGroup.Add(len(aurPkgs))
+		for _, a := range aurPkgs {
+			fetchChan <- a
 		}
 
 		waitGroup.Wait()

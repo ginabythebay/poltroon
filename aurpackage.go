@@ -1,6 +1,7 @@
-package main
+package poltroon
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -11,6 +12,11 @@ import (
 type AurPackage struct {
 	// name of the package
 	Name string
+	// CurrentVersion is the version of this package currently installed.
+	CurrentVersion string
+	// NextVersion is the available version of this package
+	NextVersion string
+
 	// root of the package directory
 	Root string
 
@@ -18,23 +24,29 @@ type AurPackage struct {
 	PkgPath string
 }
 
-// NewAurpackage creates a new AurPackage.  The next step is to call PreparePackageDir.
-func NewAurPackage(root, name string) *AurPackage {
+// NewAurPackage creates a new AurPackage.  The next step is to call PreparePackageDir.
+func NewAurPackage(root, name, currentVersion, nextVersion string) *AurPackage {
 	return &AurPackage{
-		Name: name,
-		Root: path.Join(root, name),
+		Name:           name,
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Root:           path.Join(root, name),
 	}
 }
 
+func (a *AurPackage) String() string {
+	return fmt.Sprintf(":: %s %s -> %s", a.Name, a.CurrentVersion, a.NextVersion)
+}
+
 // PreparePackageDir creates a package directory we can download to later.
-func (a *AurPackage) PreparePackageDir() error {
+func (a *AurPackage) PreparePackageDir(perm os.FileMode) error {
 	if err := os.RemoveAll(a.Root); err != nil {
 		return errors.Wrapf(err, "Unable to clean %q", a.Root)
 	}
-	if err := os.MkdirAll(a.Logs(), dirMode); err != nil {
+	if err := os.MkdirAll(a.Logs(), perm); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(a.Build(), dirMode); err != nil {
+	if err := os.MkdirAll(a.Build(), perm); err != nil {
 		return err
 	}
 	return nil
