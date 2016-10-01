@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -33,6 +35,10 @@ func main() {
 			Name:  "skippgpcheck",
 			Usage: "Turn off pgp checks",
 		},
+		cli.BoolFlag{
+			Name:  "noconfirm",
+			Usage: "Don't ask if the user wants to proceed.",
+		},
 	}
 	app.Action = func(c *cli.Context) error {
 		start := time.Now()
@@ -53,7 +59,25 @@ func main() {
 
 		var waitGroup sync.WaitGroup
 
-		// TODO(gina) dump out the packages and ask the user if they want to continue
+		if len(updates) == 0 {
+			fmt.Println("Nothing to update!")
+			os.Exit(0)
+		}
+
+		for _, u := range updates {
+			fmt.Println(u)
+		}
+
+		fmt.Println()
+		if c.Bool("noconfirm") {
+			fmt.Println("Proceeding to update all packages because --noconfirm was set...")
+		} else {
+			msg := fmt.Sprintf("Do you want to update these %d packages?", len(updates))
+			if !askForConfirmation(msg) {
+				os.Exit(0)
+			}
+		}
+		fmt.Println()
 
 		makeChan := make(chan *aurPackage)
 		for i := 0; i < c.Int("makers"); i++ {
@@ -198,4 +222,25 @@ func (p *aurPackage) logs() string {
 
 func (p *aurPackage) build() string {
 	return path.Join(p.root, "build")
+}
+
+func askForConfirmation(s string) bool {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("%s [y/N]: ", s)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "y" || response == "yes" {
+			return true
+		} else if response == "n" || response == "no" || response == "" {
+			return false
+		}
+	}
 }
