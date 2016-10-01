@@ -82,63 +82,65 @@ func (e *Exec) QueryUpdates(pkgsRoot string) ([]*poltroon.AurPackage, error) {
 }
 
 // Fetch fetches a package, using the cower command.
-func (e *Exec) Fetch(dir string, logDir string, name string) error {
-	cmd := exec.Command(e.cowerPath, "--download", name)
-	cmd.Dir = dir
-	stdout, err := os.Create(path.Join(logDir, "fetch.out"))
+func (e *Exec) Fetch(a *poltroon.AurPackage) error {
+	cmd := exec.Command(e.cowerPath, "--download", a.Name)
+	cmd.Dir = a.Build()
+	stdout, err := os.Create(path.Join(a.Logs(), "fetch.out"))
 	if err != nil {
-		return errors.Wrapf(err, "Fetching %s", name)
+		return errors.Wrapf(err, "Fetching %s", a.Name)
 	}
 	defer stdout.Close()
 	cmd.Stdout = stdout
 
-	stderr, err := os.Create(path.Join(logDir, "fetch.err"))
+	stderr, err := os.Create(path.Join(a.Logs(), "fetch.err"))
 	if err != nil {
-		return errors.Wrapf(err, "Fetching %s", name)
+		return errors.Wrapf(err, "Fetching %s", a.Name)
 	}
 	defer stderr.Close()
 	cmd.Stderr = stderr
 
 	if err = cmd.Run(); err != nil {
-		return errors.Wrapf(err, "running cower --download %s.  See %s", name, logDir)
+		return errors.Wrapf(err, "running cower --download %s.  See %s", a.Name, a.Logs())
 	}
 	return nil
 }
 
-// Make runs makepkg on a fetched command.
-func (e *Exec) Make(dir string, logDir string, name string, skippgpcheck bool) (pkgPath string, err error) {
-	cmd := exec.Command(e.makePkgPath, "--syncdeps", name)
+// Make runs makepkg on a fetched command.  If it is successful, a.PkgPath will be set
+// to the package we built.
+func (e *Exec) Make(a *poltroon.AurPackage, skippgpcheck bool) error {
+	cmd := exec.Command(e.makePkgPath, "--syncdeps", a.Name)
 	if skippgpcheck {
 		cmd.Args = append(cmd.Args, "--skippgpcheck")
 	}
-	cmd.Dir = path.Join(dir, name)
-	stdout, err := os.Create(path.Join(logDir, "make.out"))
+	cmd.Dir = path.Join(a.Build(), a.Name)
+	stdout, err := os.Create(path.Join(a.Logs(), "make.out"))
 	if err != nil {
-		return "", errors.Wrapf(err, "Making %s", name)
+		return errors.Wrapf(err, "Making %s", a.Name)
 	}
 	defer stdout.Close()
 	cmd.Stdout = stdout
 
-	stderr, err := os.Create(path.Join(logDir, "make.err"))
+	stderr, err := os.Create(path.Join(a.Logs(), "make.err"))
 	if err != nil {
-		return "", errors.Wrapf(err, "Making %s", name)
+		return errors.Wrapf(err, "Making %s", a.Name)
 	}
 	defer stderr.Close()
 	cmd.Stderr = stderr
 
 	if err = cmd.Run(); err != nil {
-		return "", errors.Wrapf(err, "running makepkg for %s.  See %s", name, logDir)
+		return errors.Wrapf(err, "running makepkg for %s.  See %s", a.Name, a.Logs())
 	}
 
 	matches, err := filepath.Glob(path.Join(cmd.Dir, "*.pkg.*"))
 	if err != nil {
-		return "", errors.Wrapf(err, "globbing makepkg for %s.  See %s", name, cmd.Dir)
+		return errors.Wrapf(err, "globbing makepkg for %s.  See %s", a.Name, cmd.Dir)
 	}
 	if len(matches) != 1 {
-		return "", errors.Errorf("Expected exactly 1 match but got this instead: %v", matches)
+		return errors.Errorf("Expected exactly 1 match but got this instead: %v", matches)
 	}
 
-	return matches[0], nil
+	a.PkgPath = matches[0]
+	return nil
 }
 
 // see http://stackoverflow.com/questions/10385551/get-exit-code-go

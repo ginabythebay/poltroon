@@ -22,6 +22,9 @@ var (
 	fetchChan = make(chan *poltroon.AurPackage)
 	// work queue of things to make
 	makeChan = make(chan *poltroon.AurPackage)
+
+	// One entry per package we are updating
+	waitGroup sync.WaitGroup
 )
 
 func main() {
@@ -76,8 +79,6 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 			fatal(err)
 		}
 
-		var waitGroup sync.WaitGroup
-
 		if len(aurPkgs) == 0 {
 			fmt.Println("Nothing to update!")
 			os.Exit(0)
@@ -98,46 +99,12 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		}
 		fmt.Println()
 
-		for i := 0; i < c.Int("makers"); i++ {
-			go func() {
-				for pkg := range makeChan {
-					output(fmt.Sprintf("%s: beginning make...", pkg.Name))
-					pkgPath, err := exec.Make(pkg.Build(), pkg.Logs(), pkg.Name, c.Bool("skippgpcheck"))
-					if err != nil {
-						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.Name, err))
-						waitGroup.Done()
-						continue
-					}
-					pkg.PkgPath = pkgPath
-					output(fmt.Sprintf("%s: successfully made", pkg.Name))
-					waitGroup.Done()
-				}
-			}()
-		}
-
-		for i := 0; i < c.Int("fetchers"); i++ {
-			go func() {
-				for pkg := range fetchChan {
-					output(fmt.Sprintf("%s: beginning fetch...", pkg.Name))
-					err := pkg.PreparePackageDir(dirMode)
-					if err != nil {
-						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
-						waitGroup.Done()
-						continue
-					}
-					err = exec.Fetch(pkg.Build(), pkg.Logs(), pkg.Name)
-					if err != nil {
-						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
-						waitGroup.Done()
-						continue
-					}
-					output(fmt.Sprintf("%s: successfully fetched", pkg.Name))
-					makeChan <- pkg
-				}
-			}()
-		}
+		// Start our asynchronous pipeline
+		startFetchers(exec, c.Int("fetchers"))
+		startMakers(exec, c.Int("makers"), c.Bool("skippgpcheck"))
 
 		waitGroup.Add(len(aurPkgs))
+		// Push things into the pipeline here
 		for _, a := range aurPkgs {
 			fetchChan <- a
 		}
@@ -179,6 +146,66 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 	}
 
 	app.Run(os.Args)
+}
+
+func startFetchers(e *exec.Exec, fetcherCnt int) {
+	for i := 0; i < fetcherCnt; i++ {
+		go func() {
+			// Fetch each package.  When we finish with a package we
+			// either pass it onto the next stage of the pipeline or
+			// we error and tell the waitGroup we are done with it.
+			for pkg := range fetchChan {
+				fetchPackage(e, pkg)
+			}
+		}()
+	}
+}
+
+func fetchPackage(e *exec.Exec, pkg *poltroon.AurPackage) {
+	output(fmt.Sprintf("%s: beginning fetch...", pkg.Name))
+	var err error
+	defer func() {
+		if err != nil {
+			output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
+			waitGroup.Done()
+			return
+		}
+		makeChan <- pkg
+		output(fmt.Sprintf("%s: successfully fetched", pkg.Name))
+	}()
+
+	err = pkg.PreparePackageDir(dirMode)
+	if err != nil {
+		return
+	}
+	err = e.Fetch(pkg)
+	if err != nil {
+		return
+	}
+}
+
+func startMakers(e *exec.Exec, makerCnt int, skipPgpCheck bool) {
+	for i := 0; i < makerCnt; i++ {
+		go func() {
+			// Make each package.  When we finish, we should always
+			// tell the waitGroup we are done with it.
+			for pkg := range makeChan {
+				makePackage(e, skipPgpCheck, pkg)
+			}
+		}()
+	}
+}
+
+func makePackage(e *exec.Exec, skipPgpCheck bool, pkg *poltroon.AurPackage) {
+	defer waitGroup.Done()
+	output(fmt.Sprintf("%s: beginning make...", pkg.Name))
+
+	err := e.Make(pkg, skipPgpCheck)
+	if err != nil {
+		output(fmt.Sprintf("%s: failed to make due to %+v", pkg.Name, err))
+		return
+	}
+	output(fmt.Sprintf("%s: successfully made", pkg.Name))
 }
 
 var outputMutex sync.Mutex
