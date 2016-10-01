@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ginabythebay/poltroon/cmd"
-	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -79,12 +78,12 @@ func main() {
 		}
 		fmt.Println()
 
-		makeChan := make(chan *aurPackage)
+		makeChan := make(chan *AurPackage)
 		for i := 0; i < c.Int("makers"); i++ {
 			go func() {
 				for pkg := range makeChan {
 					output(fmt.Sprintf("%s: beginning make...", pkg.name))
-					pkgPath, err := cmd.Make(pkg.build(), pkg.logs(), pkg.name, c.Bool("skippgpcheck"))
+					pkgPath, err := cmd.Make(pkg.Build(), pkg.Logs(), pkg.name, c.Bool("skippgpcheck"))
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.name, err))
 						waitGroup.Done()
@@ -97,18 +96,18 @@ func main() {
 			}()
 		}
 
-		fetchChan := make(chan *aurPackage)
+		fetchChan := make(chan *AurPackage)
 		for i := 0; i < c.Int("fetchers"); i++ {
 			go func() {
 				for pkg := range fetchChan {
 					output(fmt.Sprintf("%s: beginning fetch...", pkg.name))
-					err := pkg.preparePackageDir()
+					err := pkg.PreparePackageDir()
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.name, err))
 						waitGroup.Done()
 						continue
 					}
-					err = cmd.Fetch(pkg.build(), pkg.logs(), pkg.name)
+					err = cmd.Fetch(pkg.Build(), pkg.Logs(), pkg.name)
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.name, err))
 						waitGroup.Done()
@@ -121,9 +120,9 @@ func main() {
 		}
 
 		waitGroup.Add(len(updates))
-		aurPkgs := []*aurPackage{}
+		aurPkgs := []*AurPackage{}
 		for _, u := range updates {
-			pkg := newAurPackage(root, u.Name)
+			pkg := NewAurPackage(root, u.Name)
 			aurPkgs = append(aurPkgs, pkg)
 			fetchChan <- pkg
 		}
@@ -184,44 +183,6 @@ func getRoot() (string, error) {
 	root := path.Join(os.TempDir(), "poltroon")
 	err := os.MkdirAll(root, dirMode)
 	return root, err
-}
-
-type aurPackage struct {
-	// name of the package
-	name string
-	// root of the package directory
-	root string
-
-	// set after a successful make
-	pkgPath string
-}
-
-func newAurPackage(root, pkg string) *aurPackage {
-	return &aurPackage{
-		name: pkg,
-		root: path.Join(root, pkg),
-	}
-}
-
-func (p *aurPackage) preparePackageDir() error {
-	if err := os.RemoveAll(p.root); err != nil {
-		return errors.Wrapf(err, "Unable to clean %q", p.root)
-	}
-	if err := os.MkdirAll(p.logs(), dirMode); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(p.build(), dirMode); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *aurPackage) logs() string {
-	return path.Join(p.root, "logs")
-}
-
-func (p *aurPackage) build() string {
-	return path.Join(p.root, "build")
 }
 
 func askForConfirmation(s string) bool {
