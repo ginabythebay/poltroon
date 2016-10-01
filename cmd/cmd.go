@@ -1,4 +1,4 @@
-package cower
+package cmd
 
 import (
 	"bufio"
@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Cower struct {
+type Cmd struct {
 	cowerPath   string
 	makePkgPath string
 }
@@ -33,7 +33,7 @@ func findPgm(pgm string) (p string, err error) {
 }
 
 // Find finds the path to the cower command.
-func Find() (*Cower, error) {
+func Find() (*Cmd, error) {
 	cowerPath, err := findPgm("cower")
 	if err != nil {
 		return nil, errors.Wrap(err, "Look for cower here: https://aur.archlinux.org/packages/cower/")
@@ -44,10 +44,10 @@ func Find() (*Cower, error) {
 		return nil, err
 	}
 
-	return &Cower{cowerPath, makePkgPath}, nil
+	return &Cmd{cowerPath, makePkgPath}, nil
 }
 
-func (c *Cower) QueryUpdates() ([]Update, error) {
+func (c *Cmd) QueryUpdates() ([]Update, error) {
 	cmd := exec.Command(c.cowerPath, "--update")
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
@@ -78,7 +78,7 @@ func (c *Cower) QueryUpdates() ([]Update, error) {
 	return pkgs, nil
 }
 
-func (c *Cower) Fetch(dir string, logDir string, name string) error {
+func (c *Cmd) Fetch(dir string, logDir string, name string) error {
 	cmd := exec.Command(c.cowerPath, "--download", name)
 	cmd.Dir = dir
 	stdout, err := os.Create(path.Join(logDir, "fetch.out"))
@@ -101,7 +101,7 @@ func (c *Cower) Fetch(dir string, logDir string, name string) error {
 	return nil
 }
 
-func (c *Cower) Make(dir string, logDir string, name string, skippgpcheck bool) (pkgPath string, err error) {
+func (c *Cmd) Make(dir string, logDir string, name string, skippgpcheck bool) (pkgPath string, err error) {
 	cmd := exec.Command(c.makePkgPath, "--syncdeps", name)
 	if skippgpcheck {
 		cmd.Args = append(cmd.Args, "--skippgpcheck")

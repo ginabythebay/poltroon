@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ginabythebay/poltroon/cower"
+	"github.com/ginabythebay/poltroon/cmd"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -48,11 +48,11 @@ func main() {
 			fatal(err)
 		}
 
-		cwr, err := cower.Find()
+		cmd, err := cmd.Find()
 		if err != nil {
 			fatal(err)
 		}
-		updates, err := cwr.QueryUpdates()
+		updates, err := cmd.QueryUpdates()
 		if err != nil {
 			fatal(err)
 		}
@@ -84,7 +84,7 @@ func main() {
 			go func() {
 				for pkg := range makeChan {
 					output(fmt.Sprintf("%s: beginning make...", pkg.name))
-					pkgPath, err := cwr.Make(pkg.build(), pkg.logs(), pkg.name, c.Bool("skippgpcheck"))
+					pkgPath, err := cmd.Make(pkg.build(), pkg.logs(), pkg.name, c.Bool("skippgpcheck"))
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.name, err))
 						waitGroup.Done()
@@ -108,7 +108,7 @@ func main() {
 						waitGroup.Done()
 						continue
 					}
-					err = cwr.Fetch(pkg.build(), pkg.logs(), pkg.name)
+					err = cmd.Fetch(pkg.build(), pkg.logs(), pkg.name)
 					if err != nil {
 						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.name, err))
 						waitGroup.Done()
