@@ -82,15 +82,15 @@ func main() {
 		for i := 0; i < c.Int("makers"); i++ {
 			go func() {
 				for pkg := range makeChan {
-					output(fmt.Sprintf("%s: beginning make...", pkg.name))
-					pkgPath, err := cmd.Make(pkg.Build(), pkg.Logs(), pkg.name, c.Bool("skippgpcheck"))
+					output(fmt.Sprintf("%s: beginning make...", pkg.Name))
+					pkgPath, err := cmd.Make(pkg.Build(), pkg.Logs(), pkg.Name, c.Bool("skippgpcheck"))
 					if err != nil {
-						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.name, err))
+						output(fmt.Sprintf("%s: failed to make due to %+v", pkg.Name, err))
 						waitGroup.Done()
 						continue
 					}
-					pkg.pkgPath = pkgPath
-					output(fmt.Sprintf("%s: successfully made", pkg.name))
+					pkg.PkgPath = pkgPath
+					output(fmt.Sprintf("%s: successfully made", pkg.Name))
 					waitGroup.Done()
 				}
 			}()
@@ -100,20 +100,20 @@ func main() {
 		for i := 0; i < c.Int("fetchers"); i++ {
 			go func() {
 				for pkg := range fetchChan {
-					output(fmt.Sprintf("%s: beginning fetch...", pkg.name))
+					output(fmt.Sprintf("%s: beginning fetch...", pkg.Name))
 					err := pkg.PreparePackageDir()
 					if err != nil {
-						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.name, err))
+						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
 						waitGroup.Done()
 						continue
 					}
-					err = cmd.Fetch(pkg.Build(), pkg.Logs(), pkg.name)
+					err = cmd.Fetch(pkg.Build(), pkg.Logs(), pkg.Name)
 					if err != nil {
-						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.name, err))
+						output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
 						waitGroup.Done()
 						continue
 					}
-					output(fmt.Sprintf("%s: successfully fetched", pkg.name))
+					output(fmt.Sprintf("%s: successfully fetched", pkg.Name))
 					makeChan <- pkg
 				}
 			}()
@@ -131,10 +131,10 @@ func main() {
 
 		var good, bad []string
 		for _, pkg := range aurPkgs {
-			if pkg.pkgPath == "" {
-				bad = append(bad, pkg.name)
+			if pkg.PkgPath == "" {
+				bad = append(bad, pkg.Name)
 			} else {
-				good = append(good, pkg.pkgPath)
+				good = append(good, pkg.PkgPath)
 			}
 		}
 

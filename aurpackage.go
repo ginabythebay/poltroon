@@ -10,26 +10,26 @@ import (
 // AurPackage is a data holder for what we know about a package
 type AurPackage struct {
 	// name of the package
-	name string
+	Name string
 	// root of the package directory
-	root string
+	Root string
 
 	// set after a successful make
-	pkgPath string
+	PkgPath string
 }
 
 // NewAurpackage creates a new AurPackage.  The next step is to call PreparePackageDir.
 func NewAurPackage(root, name string) *AurPackage {
 	return &AurPackage{
-		name: name,
-		root: path.Join(root, name),
+		Name: name,
+		Root: path.Join(root, name),
 	}
 }
 
 // PreparePackageDir creates a package directory we can download to later.
 func (a *AurPackage) PreparePackageDir() error {
-	if err := os.RemoveAll(a.root); err != nil {
-		return errors.Wrapf(err, "Unable to clean %q", a.root)
+	if err := os.RemoveAll(a.Root); err != nil {
+		return errors.Wrapf(err, "Unable to clean %q", a.Root)
 	}
 	if err := os.MkdirAll(a.Logs(), dirMode); err != nil {
 		return err
@@ -42,10 +42,10 @@ func (a *AurPackage) PreparePackageDir() error {
 
 // Logs returns the the directory where we should put log files.
 func (a *AurPackage) Logs() string {
-	return path.Join(a.root, "logs")
+	return path.Join(a.Root, "logs")
 }
 
 // Build return the directory where we should put build files.
 func (a *AurPackage) Build() string {
-	return path.Join(a.root, "build")
+	return path.Join(a.Root, "build")
 }
