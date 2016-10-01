@@ -1,4 +1,4 @@
-package poltroon
+package main
 
 import (
 	"bufio"
@@ -17,9 +17,28 @@ import (
 
 const dirMode = os.ModeDir | 0770
 
+var (
+	// work queue of things to fetch
+	fetchChan = make(chan *poltroon.AurPackage)
+	// work queue of things to make
+	makeChan = make(chan *poltroon.AurPackage)
+)
+
 func main() {
 	app := cli.NewApp()
-	app.Usage = "Foolishly upgrade AUR packages"
+	app.Usage = strings.TrimSpace(`
+Foolishly upgrade AUR packages.
+
+1. Runs cower -u to find already-installed packages that are out of
+   date, prints out the results.
+2. Asks if the user wants to proceed.  Exits if they don't.
+3. Starts a two-stage pipeline.
+4. In the first stage, we run cower -d to download the package (default it two workers).
+5. In the second state, we run makepkg -s to build the package files.
+5. At the end, we print out the command the user can run to install the packages.
+
+All the action happens in /tmp/poltroon/ with a sub-directory for each package and a logs directory within that that can be inspected.
+`)
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "fetchers",
@@ -79,7 +98,6 @@ func main() {
 		}
 		fmt.Println()
 
-		makeChan := make(chan *poltroon.AurPackage)
 		for i := 0; i < c.Int("makers"); i++ {
 			go func() {
 				for pkg := range makeChan {
@@ -97,7 +115,6 @@ func main() {
 			}()
 		}
 
-		fetchChan := make(chan *poltroon.AurPackage)
 		for i := 0; i < c.Int("fetchers"); i++ {
 			go func() {
 				for pkg := range fetchChan {
