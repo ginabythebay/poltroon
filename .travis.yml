@@ -5,9 +5,4 @@ language: go
 go:
   - 1.7.1
 script:
-  - export headerdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/"
-  - export libdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/.libs"
-  - export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
-  - export LDFLAGS="$LDFLAGS -L${libdir}"
-  - go install ./...
-  - go test -v ./...
+  - ./travis_script.sh
