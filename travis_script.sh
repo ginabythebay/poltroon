@@ -5,8 +5,17 @@
 
 set -ev
 
-headerdir="$(pwd)/pacman/lib/libalpm/"
-libdir="$(pwd)/pacman/lib/libalpm/.libs"
+cd ./pacman
+./autogen.sh
+./configure
+
+cd lib/libalpm
+make
+
+cd $TRAVIS_BUILD_DIR
+
+headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/"
+libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
 export LDFLAGS="$LDFLAGS -L${libdir}"
 
