@@ -1,11 +1,10 @@
 #sudo: required
 language: c
-#go:
-#  - 1.7.1
-#before_install:
-#  - sudo apt-get update -qq
-#  - sudo apt-get install -qq asciidoc autopoint libarchive-dev curl
-#  - git clone git://projects.archlinux.org/pacman.git pacman
-script:
-  - echo "**** hi! ****"
-#script: ./travis_script.sh
+go:
+  - 1.7.1
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq asciidoc autopoint libarchive-dev curl
+  - git clone git://projects.archlinux.org/pacman.git pacman
+install: true
+script: ./travis_script.sh
