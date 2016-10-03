@@ -1,7 +1,7 @@
 #sudo: required
-language: go
-go:
-  - 1.7.1
+language: c
+#go:
+#  - 1.7.1
 #before_install:
 #  - sudo apt-get update -qq
 #  - sudo apt-get install -qq asciidoc autopoint libarchive-dev curl
