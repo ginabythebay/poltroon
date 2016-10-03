@@ -3,7 +3,7 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq asciidoc
   - git clone git://projects.archlinux.org/pacman.git pacman
-  - cd ./pacman ./autogen.sh && ./configure && make
+  - cd ./pacman && ./autogen.sh && ./configure && make
 go:
   - 1.7.1
 script:
