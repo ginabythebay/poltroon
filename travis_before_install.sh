@@ -6,7 +6,7 @@
 set -ev
 
 # things we need for building libalpm
-pkgs=asciidoc autopoint libarchive curl
+pkgs="asciidoc autopoint libarchive curl"
 
 sudo apt-get update -qq
 sudo apt-get install -qq $pkgs
