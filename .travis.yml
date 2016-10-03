@@ -1,7 +1,7 @@
 language: go
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq asciidoc autopoint
+  - sudo apt-get install -qq asciidoc autopoint libarchive curl
   - git clone git://projects.archlinux.org/pacman.git pacman
   - cd ./pacman && ./autogen.sh && ./configure && make
 go:
