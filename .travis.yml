@@ -1,6 +1,7 @@
-language: go
+sudo: required
 before_install:
   - ./travis_before_install.sh
+language: go
 go:
   - 1.7.1
 script:
