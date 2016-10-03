@@ -18,8 +18,3 @@ cd ./pacman
 
 cd lib/libalpm
 make
-
-headerdir="$(pwd)/lib/libalpm/"
-libdir="$(pwd)/lib/libalpm/.libs"
-export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
-export LDFLAGS="$LDFLAGS -L${libdir}"
