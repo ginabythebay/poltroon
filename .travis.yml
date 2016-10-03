@@ -3,10 +3,11 @@ before_install:
   - ./travis_before_install.sh
 language: go
 env:
-  - headerdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/"
-  - libdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/.libs"
-  - CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
-  - LDFLAGS="$LDFLAGS -L${libdir}"
+  global:
+    - headerdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/"
+    - libdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/.libs"
+    - CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
+    - LDFLAGS="$LDFLAGS -L${libdir}"
 go:
   - 1.7.1
 script:
