@@ -19,7 +19,7 @@ libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
 export LDFLAGS="$LDFLAGS -L${libdir}"
 
-# let me see what it up here
+# let me see what it set up here
 env
 
 go install ./...
