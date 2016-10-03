@@ -15,6 +15,7 @@ import (
 
 type Exec struct {
 	cowerPath   string
+	pacmanPath  string
 	makePkgPath string
 }
 
@@ -39,46 +40,54 @@ func Find() (*Exec, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Look for cower here: https://aur.archlinux.org/packages/cower/")
 	}
-
+	pacmanPath, err := findPgm("pacman")
+	if err != nil {
+		return nil, err
+	}
 	makePkgPath, err := findPgm("makepkg")
 	if err != nil {
 		return nil, err
 	}
 
-	return &Exec{cowerPath, makePkgPath}, nil
+	return &Exec{cowerPath, pacmanPath, makePkgPath}, nil
 }
 
-// QueryUpdates looks for already-installed but out-of-date AUR
-// packages, using the cower command.
-func (e *Exec) QueryUpdates(pkgsRoot string) ([]*poltroon.AurPackage, error) {
-	cmd := exec.Command(e.cowerPath, "--update")
+// QueryForeignPackages returns all packages that are installed but
+// don't exist in the sync databases (e.g. they were installed via
+// pacman --upgrade)
+func (e *Exec) QueryForeignPackages() ([]VersionedPackage, error) {
+	cmd := exec.Command(e.pacmanPath, "--query", "--foreign")
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, errors.Wrap(err, "Getting stdout for cower --update")
+		return nil, errors.Wrap(err, "Getting stdout for pacman")
 	}
 	if err = cmd.Start(); err != nil {
-		return nil, errors.Wrap(err, "starting cower --update")
+		return nil, errors.Wrap(err, "starting pacman")
 	}
-	pkgs := []*poltroon.AurPackage{}
+	pkgs := []VersionedPackage{}
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Example line:
-		// :: google-chrome 53.0.2785.116-1 -> 53.0.2785.143-1
-		var colons, name, curver, arrow, newver string
-		_, err = fmt.Sscan(line, &colons, &name, &curver, &arrow, &newver)
+		// ledger 3.1.1-3
+		var name, version string
+		_, err = fmt.Sscan(line, &name, &version)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to parse [%s]", line)
 		}
-		pkgs = append(pkgs, poltroon.NewAurPackage(pkgsRoot, name, curver, newver))
+		pkgs = append(pkgs, VersionedPackage{name, version})
 	}
-	err = cmd.Wait()
-	// an exit code of 1 is normal if cower found something to update
-	if status, ok := exitStatus(err); !ok || (status != 0 && status != 1) {
-		return nil, errors.Wrap(err, "executing cower --update")
+	if err = cmd.Wait(); err != nil {
+		return nil, errors.Wrap(err, "executing pacman")
 	}
 	return pkgs, nil
+}
+
+// VersionedPackage is just a package name with a version.
+type VersionedPackage struct {
+	Name    string
+	Version string
 }
 
 // Fetch fetches a package, using the cower command.

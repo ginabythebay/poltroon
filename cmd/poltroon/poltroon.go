@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"github.com/ginabythebay/poltroon"
+	"github.com/ginabythebay/poltroon/alpm"
+	"github.com/ginabythebay/poltroon/aur"
 	"github.com/ginabythebay/poltroon/exec"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -74,13 +77,14 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		if err != nil {
 			fatal(err)
 		}
-		aurPkgs, err := exec.QueryUpdates(root)
+		aurPkgs, err := queryUpdates(exec, root)
 		if err != nil {
 			fatal(err)
 		}
 
 		if len(aurPkgs) == 0 {
-			fmt.Println("Nothing to update!")
+			elapsed := time.Since(start)
+			fmt.Printf("Nothing to update!  Exiting in %s\n", elapsed)
 			os.Exit(0)
 		}
 
@@ -206,6 +210,40 @@ func makePackage(e *exec.Exec, skipPgpCheck bool, pkg *poltroon.AurPackage) {
 		return
 	}
 	output(fmt.Sprintf("%s: successfully made", pkg.Name))
+}
+
+func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
+	foreign, err := e.QueryForeignPackages()
+	if err != nil {
+		return nil, errors.Wrap(err, "queryUpdates")
+	}
+	sem := make(chan bool, 15)
+	var resultMu sync.Mutex
+	result := []*poltroon.AurPackage{}
+	for _, f := range foreign {
+		f := f
+		sem <- true
+		go func() {
+			defer func() { <-sem }()
+			aurVersion, err := aur.GetVersion(f.Name)
+			if aurVersion == "" {
+				return
+			}
+			if err != nil {
+				fatal(fmt.Sprintf("%+v: Get aur version for %s", err, f.Name))
+			}
+			if alpm.VerCmp(f.Version, aurVersion) > 0 {
+				pkg := poltroon.NewAurPackage(root, f.Name, f.Version, aurVersion)
+				resultMu.Lock()
+				result = append(result, pkg)
+				resultMu.Unlock()
+			}
+		}()
+	}
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+	return result, nil
 }
 
 var outputMutex sync.Mutex
