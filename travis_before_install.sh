@@ -15,4 +15,6 @@ git clone git://projects.archlinux.org/pacman.git pacman
 cd ./pacman
 ./autogen.sh
 ./configure
+
+cd lib/libalpm
 make
