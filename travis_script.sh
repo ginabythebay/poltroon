@@ -14,12 +14,13 @@ make
 
 cd $TRAVIS_BUILD_DIR
 
-headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/"
+headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm"
 libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
 export LDFLAGS="$LDFLAGS -L${libdir}"
 
 # let me see what it set up here
+tree pacman/lib/libalpm
 env
 
 go get -t -v ./...

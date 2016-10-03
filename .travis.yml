@@ -3,6 +3,7 @@ go:
   - 1.7.1
 addons:
   apt:
+    # we need these to build libalpm (part of pacman)
     packages:
     - asciidoc
     - autopoint
