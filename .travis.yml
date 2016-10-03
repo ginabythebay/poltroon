@@ -4,7 +4,6 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq asciidoc autopoint libarchive-dev curl
   - git clone git://projects.archlinux.org/pacman.git pacman
-before_script: ./travis_before_install.sh
 go:
   - 1.7.1
 script: ./travis_script.sh
