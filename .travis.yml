@@ -2,14 +2,12 @@ sudo: required
 before_install:
   - ./travis_before_install.sh
 language: go
-env:
-  global:
-    - headerdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/"
-    - libdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/.libs"
-    - CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
-    - LDFLAGS="$LDFLAGS -L${libdir}"
 go:
   - 1.7.1
 script:
+  - export headerdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/"
+  - export libdir="${TRAVIS_BUILD_DIR}/pacman/lib/libalpm/.libs"
+  - export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
+  - export LDFLAGS="$LDFLAGS -L${libdir}"
   - go install ./...
   - go test -v ./...
