@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# This script is an attempt to use libalpm, which we build in the
-# travis_before_install.sh script.
+# This script is a workaround for building on travis, where this is no
+# native libalpm (travis is ubuntu-based).  Here we build the libalpm
+# portion of pacman and then munge our environment variables so that
+# cgo can find it.
 
 set -ev
 
@@ -19,11 +21,10 @@ libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
 export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
 
-# let me see what it set up here
-ls -l pacman/lib/libalpm/*
-ls -l pacman/lib/libalpm/.libs/*
-env
-
+# Normally this would happen in the travis install step, but we
+# skipped that before (it would have failed because libalpm wasn't
+# available)
 go get -t -v ./...
+
 go install ./...
 go test -v ./...

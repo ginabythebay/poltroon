@@ -1,6 +1,8 @@
 language: go
+
 go:
   - 1.7.1
+
 addons:
   apt:
     # we need these to build libalpm (part of pacman)
@@ -9,7 +11,14 @@ addons:
     - autopoint
     - libarchive-dev
     - curl
+
+# TODO(gina) switch to using a submodule for this?  At least then we
+# would be using a known version of the source code
 before_install:
   - git clone git://projects.archlinux.org/pacman.git pacman
+
+# we skip this step here because we have not built libalpm yet.  It
+# all happens in travis_script.sh
 install: true
+
 script: ./travis_script.sh
