@@ -2,8 +2,6 @@
 
 * things to work on
 
-** default to file:// urls
-let user use file paths if they like that better
 ** better progress output
 
 periodically output processed %d of %d packages (or percent done, or something).
@@ -46,3 +44,11 @@ seconds on my desktop).  Second, to do it right, I would need to allow
 for oddball configurations like pacman does where the root directory
 can be changed and the pacman directory (where the dbs are) can be
 changed.
+
+** investigate defaulting to file:// urls
+let user use file paths if they like that better
+
+
+It turns out that when pacman sees file:// urls, in addition to using
+the cache, it expects that the packages are signed.  Not dealing with
+that for now.
