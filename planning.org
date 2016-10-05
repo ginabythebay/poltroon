@@ -1,0 +1,19 @@
+
+
+* things to work on
+
+** better progress output
+
+periodically output processed %d of %d packages (or percent done, or something).
+
+ideally don't just update this every time a new package is completed?
+Maybe try and avoid spamming the console too often?  Also, if there
+hasn't been anything changed in a while, perhaps reassure them that
+something is still going on.  (maybe based on the size of the make
+stdout/stderr files?)
+
+** Don't depend on pacman
+
+Do it all in-process using alpm
+
+** investigate batching pkginfo requests to AUR
