@@ -239,40 +239,23 @@ func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 		return nil, errors.Wrap(err, "queryUpdates")
 	}
 
-	// For each foreign package we have, we query the AUR to see what version it has.
-	//
-	// Each packages gets its own rpc call, but we do rpcs in paralell
-	// (up to 15 at a time).
-	//
-	// TODO(gina) look into instead batching up multiple packages into
-	// a single rpc call.  This would probably be easier on the AUR
-	// servers.  This code might be simpler.  It might be about as
-	// fast as what we have here.
-	sem := make(chan bool, 15)
-	var resultMu sync.Mutex
+	names := []string{}
+	for _, f := range foreign {
+		names = append(names, f.Name)
+	}
+
+	allInfos, err := aur.GetInfos(names)
+	if err != nil {
+		fatal(fmt.Sprintf("%+v: Get aur info for names", err))
+	}
+
 	result := []*poltroon.AurPackage{}
 	for _, f := range foreign {
-		f := f
-		sem <- true
-		go func() {
-			defer func() { <-sem }()
-			aurInfo, err := aur.GetInfo(f.Name)
-			if err != nil {
-				fatal(fmt.Sprintf("%+v: Get aur info for %s", err, f.Name))
-			}
-			if aurInfo.Version == "" {
-				return
-			}
-			if alpm.VerCmp(f.Version, aurInfo.Version) > 0 {
-				pkg := poltroon.NewAurPackage(root, f.Name, f.Version, aurInfo.Version, aurInfo.SnapshotURL)
-				resultMu.Lock()
-				result = append(result, pkg)
-				resultMu.Unlock()
-			}
-		}()
-	}
-	for i := 0; i < cap(sem); i++ {
-		sem <- true
+		info, ok := allInfos[f.Name]
+		if ok && alpm.VerCmp(f.Version, info.Version) > 0 {
+			pkg := poltroon.NewAurPackage(root, f.Name, f.Version, info.Version, info.SnapshotURL)
+			result = append(result, pkg)
+		}
 	}
 	return result, nil
 }

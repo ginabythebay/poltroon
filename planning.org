@@ -2,6 +2,8 @@
 
 * things to work on
 
+** default to file:// urls
+let user use file paths if they like that better
 ** better progress output
 
 periodically output processed %d of %d packages (or percent done, or something).
@@ -14,6 +16,35 @@ stdout/stderr files?)
 
 ** Don't depend on pacman
 
-Do it all in-process using alpm
+Do it all in-process using alpm.
+
+Well, maybe not.  First: running pacman is really quick (takes .1
+seconds on my desktop).  Second, to do it right, I would need to allow
+for oddball configurations like pacman does where the root directory
+can be changed and the pacman directory (where the dbs are) can be
+changed.
+
+
+
+** make a man page
+** make a PKGFILE
+** stick up on AUR
+
+* done
 
 ** investigate batching pkginfo requests to AUR
+
+before change, I just ran poltroon 3 times, which causes it to hit
+pacman and then hit the AUR (in parallel, with an package per RPC).
+
+It took:
+
+
+| before change | after change |
+|---------------+--------------|
+| 1.309243574s  | 934.43743ms  |
+| 1.298086528s  | 962.542893ms |
+| 1.301181656s  | 926.806052ms |
+
+so batching without parallel seems faster, in this once case.  and it
+should be simpler.
