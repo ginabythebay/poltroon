@@ -14,17 +14,6 @@ hasn't been anything changed in a while, perhaps reassure them that
 something is still going on.  (maybe based on the size of the make
 stdout/stderr files?)
 
-** Don't depend on pacman
-
-Do it all in-process using alpm.
-
-Well, maybe not.  First: running pacman is really quick (takes .1
-seconds on my desktop).  Second, to do it right, I would need to allow
-for oddball configurations like pacman does where the root directory
-can be changed and the pacman directory (where the dbs are) can be
-changed.
-
-
 
 ** make a man page
 ** make a PKGFILE
@@ -48,3 +37,12 @@ It took:
 
 so batching without parallel seems faster, in this once case.  and it
 should be simpler.
+** Investigate not depending on pacman
+
+Do it all in-process using alpm.
+
+Well, maybe not.  First: running pacman is really quick (takes .1
+seconds on my desktop).  Second, to do it right, I would need to allow
+for oddball configurations like pacman does where the root directory
+can be changed and the pacman directory (where the dbs are) can be
+changed.
