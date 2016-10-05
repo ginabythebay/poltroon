@@ -217,6 +217,16 @@ func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "queryUpdates")
 	}
+
+	// For each foreign package we have, we query the AUR to see what version it has.
+	//
+	// Each packages gets its own rpc call, but we do rpcs in paralell
+	// (up to 15 at a time).
+	//
+	// TODO(gina) look into instead batching up multiple packages into
+	// a single rpc call.  This would probably be easier on the AUR
+	// servers.  This code might be simpler.  It might be about as
+	// fast as what we have here.
 	sem := make(chan bool, 15)
 	var resultMu sync.Mutex
 	result := []*poltroon.AurPackage{}
