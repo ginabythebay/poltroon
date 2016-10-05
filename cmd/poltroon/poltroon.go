@@ -252,7 +252,7 @@ func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 	result := []*poltroon.AurPackage{}
 	for _, f := range foreign {
 		info, ok := allInfos[f.Name]
-		if ok && alpm.VerCmp(f.Version, info.Version) > 0 {
+		if ok && alpm.VerCmp(f.Version, info.Version) < 0 {
 			pkg := poltroon.NewAurPackage(root, f.Name, f.Version, info.Version, info.SnapshotURL)
 			result = append(result, pkg)
 		}
