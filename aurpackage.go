@@ -17,6 +17,9 @@ type AurPackage struct {
 	// NextVersion is the available version of this package
 	NextVersion string
 
+	// url to fetch the current snapshot
+	SnapshotURL string
+
 	// root of the package directory
 	Root string
 
@@ -25,11 +28,12 @@ type AurPackage struct {
 }
 
 // NewAurPackage creates a new AurPackage.  The next step is to call PreparePackageDir.
-func NewAurPackage(root, name, currentVersion, nextVersion string) *AurPackage {
+func NewAurPackage(root, name, currentVersion, nextVersion, snapshotURL string) *AurPackage {
 	return &AurPackage{
 		Name:           name,
 		CurrentVersion: currentVersion,
 		NextVersion:    nextVersion,
+		SnapshotURL:    snapshotURL,
 		Root:           path.Join(root, name),
 	}
 }

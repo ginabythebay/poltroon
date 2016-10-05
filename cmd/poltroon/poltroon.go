@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/ginabythebay/poltroon/alpm"
 	"github.com/ginabythebay/poltroon/aur"
 	"github.com/ginabythebay/poltroon/exec"
+	"github.com/ginabythebay/poltroon/tar"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -53,7 +56,7 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		},
 		cli.IntFlag{
 			Name:  "makers",
-			Value: 2,
+			Value: 3,
 			Usage: "Number of concurrent makers",
 		},
 		cli.BoolFlag{
@@ -174,16 +177,34 @@ func fetchPackage(e *exec.Exec, pkg *poltroon.AurPackage) {
 			waitGroup.Done()
 			return
 		}
-		makeChan <- pkg
 		output(fmt.Sprintf("%s: successfully fetched", pkg.Name))
+		makeChan <- pkg
 	}()
 
 	err = pkg.PreparePackageDir(dirMode)
 	if err != nil {
 		return
 	}
-	err = e.Fetch(pkg)
+
+	resp, err := http.Get(pkg.SnapshotURL)
 	if err != nil {
+		err = errors.Wrapf(err, "%s: fetching %s", pkg.Name, pkg.SnapshotURL)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		err = errors.Errorf("%s: fetching %s unexpected status %d/%s", pkg.Name, pkg.SnapshotURL, resp.StatusCode, resp.Status)
+		return
+	}
+
+	ungzipper, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		err = errors.Wrapf(err, "%s: decompressing", pkg.Name, pkg.SnapshotURL)
+		return
+	}
+	err = tar.ExtractAll(ungzipper, pkg.Build())
+	if err != nil {
+		err = errors.Wrapf(err, "%s: extracting", pkg.Name, pkg.SnapshotURL)
 		return
 	}
 }
@@ -235,15 +256,15 @@ func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 		sem <- true
 		go func() {
 			defer func() { <-sem }()
-			aurVersion, err := aur.GetVersion(f.Name)
-			if aurVersion == "" {
+			aurInfo, err := aur.GetInfo(f.Name)
+			if err != nil {
+				fatal(fmt.Sprintf("%+v: Get aur info for %s", err, f.Name))
+			}
+			if aurInfo.Version == "" {
 				return
 			}
-			if err != nil {
-				fatal(fmt.Sprintf("%+v: Get aur version for %s", err, f.Name))
-			}
-			if alpm.VerCmp(f.Version, aurVersion) > 0 {
-				pkg := poltroon.NewAurPackage(root, f.Name, f.Version, aurVersion)
+			if alpm.VerCmp(f.Version, aurInfo.Version) > 0 {
+				pkg := poltroon.NewAurPackage(root, f.Name, f.Version, aurInfo.Version, aurInfo.SnapshotURL)
 				resultMu.Lock()
 				result = append(result, pkg)
 				resultMu.Unlock()

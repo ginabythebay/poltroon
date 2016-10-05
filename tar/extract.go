@@ -13,9 +13,10 @@ type extractor func(r *tar.Reader, h *tar.Header, root string) error
 
 // maps from tar.Header.TypeFlag to a function that knows how to extract it.
 var extractorMap = map[byte]extractor{
-	tar.TypeReg:  extractFile,
-	tar.TypeRegA: extractFile,
-	tar.TypeDir:  extractDir,
+	tar.TypeReg:           extractFile,
+	tar.TypeRegA:          extractFile,
+	tar.TypeDir:           extractDir,
+	tar.TypeXGlobalHeader: ignore, // AUR packages fill this with the commit id.
 }
 
 // ExtractAll extracts the tar file in r and puts it into root.
@@ -32,13 +33,17 @@ func ExtractAll(reader io.Reader, root string) error {
 		}
 		extractFunc, ok := extractorMap[header.Typeflag]
 		if !ok {
-			return errors.Errorf("Unknown TypfeFlag %x for %s", header.Typeflag, header.Name)
+			return errors.Errorf("Unknown TypeFlag %x for %s", header.Typeflag, header.Name)
 		}
 		err = extractFunc(r, header, root)
 		if err != nil {
 			return err
 		}
 	}
+}
+
+func ignore(r *tar.Reader, h *tar.Header, root string) error {
+	return nil
 }
 
 func extractFile(r *tar.Reader, h *tar.Header, root string) error {

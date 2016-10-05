@@ -14,7 +14,6 @@ import (
 )
 
 type Exec struct {
-	cowerPath   string
 	pacmanPath  string
 	makePkgPath string
 }
@@ -36,10 +35,6 @@ func findPgm(pgm string) (p string, err error) {
 
 // Find finds the path to the cower command.
 func Find() (*Exec, error) {
-	cowerPath, err := findPgm("cower")
-	if err != nil {
-		return nil, errors.Wrap(err, "Look for cower here: https://aur.archlinux.org/packages/cower/")
-	}
 	pacmanPath, err := findPgm("pacman")
 	if err != nil {
 		return nil, err
@@ -49,7 +44,7 @@ func Find() (*Exec, error) {
 		return nil, err
 	}
 
-	return &Exec{cowerPath, pacmanPath, makePkgPath}, nil
+	return &Exec{pacmanPath, makePkgPath}, nil
 }
 
 // QueryForeignPackages returns all packages that are installed but
@@ -88,30 +83,6 @@ func (e *Exec) QueryForeignPackages() ([]VersionedPackage, error) {
 type VersionedPackage struct {
 	Name    string
 	Version string
-}
-
-// Fetch fetches a package, using the cower command.
-func (e *Exec) Fetch(a *poltroon.AurPackage) error {
-	cmd := exec.Command(e.cowerPath, "--download", a.Name)
-	cmd.Dir = a.Build()
-	stdout, err := os.Create(path.Join(a.Logs(), "fetch.out"))
-	if err != nil {
-		return errors.Wrapf(err, "Fetching %s", a.Name)
-	}
-	defer stdout.Close()
-	cmd.Stdout = stdout
-
-	stderr, err := os.Create(path.Join(a.Logs(), "fetch.err"))
-	if err != nil {
-		return errors.Wrapf(err, "Fetching %s", a.Name)
-	}
-	defer stderr.Close()
-	cmd.Stderr = stderr
-
-	if err = cmd.Run(); err != nil {
-		return errors.Wrapf(err, "running cower --download %s.  See %s", a.Name, a.Logs())
-	}
-	return nil
 }
 
 // Make runs makepkg on a fetched command.  If it is successful, a.PkgPath will be set
