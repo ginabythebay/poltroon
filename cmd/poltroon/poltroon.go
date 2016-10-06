@@ -29,8 +29,7 @@ var (
 	// work queue of things to make
 	makeChan = make(chan *poltroon.AurPackage)
 
-	// One entry per package we are updating
-	waitGroup sync.WaitGroup
+	updateState *poltroon.UpdateState
 )
 
 func main() {
@@ -66,6 +65,10 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		cli.BoolFlag{
 			Name:  "noconfirm",
 			Usage: "Don't ask if the user wants to proceed.",
+		},
+		cli.BoolFlag{
+			Name:  "quiet",
+			Usage: "Don't print progress updates.",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
@@ -106,17 +109,31 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		}
 		fmt.Println()
 
+		updateState = poltroon.NewUpdateState(len(aurPkgs))
+
+		if !c.Bool("quiet") {
+			go func() {
+				ticker := time.NewTicker(time.Second * 10)
+				for range ticker.C {
+					s := updateState.String()
+					if s == "" {
+						return
+					}
+					fmt.Println(s)
+				}
+			}()
+		}
+
 		// Start our asynchronous pipeline
 		startFetchers(exec, c.Int("fetchers"))
 		startMakers(exec, c.Int("makers"), c.Bool("skippgpcheck"))
 
-		waitGroup.Add(len(aurPkgs))
 		// Push things into the pipeline here
 		for _, a := range aurPkgs {
 			fetchChan <- a
 		}
 
-		waitGroup.Wait()
+		updateState.Wait()
 
 		var good, bad []string
 		for _, pkg := range aurPkgs {
@@ -160,7 +177,7 @@ func startFetchers(e *exec.Exec, fetcherCnt int) {
 		go func() {
 			// Fetch each package.  When we finish with a package we
 			// either pass it onto the next stage of the pipeline or
-			// we error and tell the waitGroup we are done with it.
+			// we error mark it finished.
 			for pkg := range fetchChan {
 				fetchPackage(e, pkg)
 			}
@@ -169,15 +186,13 @@ func startFetchers(e *exec.Exec, fetcherCnt int) {
 }
 
 func fetchPackage(e *exec.Exec, pkg *poltroon.AurPackage) {
-	output(fmt.Sprintf("%s: beginning fetch...", pkg.Name))
 	var err error
 	defer func() {
 		if err != nil {
 			output(fmt.Sprintf("%s: failed to fetch due to %+v", pkg.Name, err))
-			waitGroup.Done()
+			updateState.Finished(pkg.Name)
 			return
 		}
-		output(fmt.Sprintf("%s: successfully fetched", pkg.Name))
 		makeChan <- pkg
 	}()
 
@@ -212,8 +227,6 @@ func fetchPackage(e *exec.Exec, pkg *poltroon.AurPackage) {
 func startMakers(e *exec.Exec, makerCnt int, skipPgpCheck bool) {
 	for i := 0; i < makerCnt; i++ {
 		go func() {
-			// Make each package.  When we finish, we should always
-			// tell the waitGroup we are done with it.
 			for pkg := range makeChan {
 				makePackage(e, skipPgpCheck, pkg)
 			}
@@ -222,15 +235,14 @@ func startMakers(e *exec.Exec, makerCnt int, skipPgpCheck bool) {
 }
 
 func makePackage(e *exec.Exec, skipPgpCheck bool, pkg *poltroon.AurPackage) {
-	defer waitGroup.Done()
-	output(fmt.Sprintf("%s: beginning make...", pkg.Name))
+	updateState.StartMake(pkg.Name)
+	defer updateState.Finished(pkg.Name)
 
 	err := e.Make(pkg, skipPgpCheck)
 	if err != nil {
 		output(fmt.Sprintf("%s: failed to make due to %+v", pkg.Name, err))
 		return
 	}
-	output(fmt.Sprintf("%s: successfully made", pkg.Name))
 }
 
 func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
