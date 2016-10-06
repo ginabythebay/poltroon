@@ -2,16 +2,6 @@
 
 * things to work on
 
-** better progress output
-
-periodically output processed %d of %d packages (or percent done, or something).
-
-ideally don't just update this every time a new package is completed?
-Maybe try and avoid spamming the console too often?  Also, if there
-hasn't been anything changed in a while, perhaps reassure them that
-something is still going on.  (maybe based on the size of the make
-stdout/stderr files?)
-
 
 ** make a man page
 ** make a PKGFILE
@@ -52,3 +42,13 @@ let user use file paths if they like that better
 It turns out that when pacman sees file:// urls, in addition to using
 the cache, it expects that the packages are signed.  Not dealing with
 that for now.
+
+** better progress output
+
+periodically output processed %d of %d packages (or percent done, or something).
+
+ideally don't just update this every time a new package is completed?
+Maybe try and avoid spamming the console too often?  Also, if there
+hasn't been anything changed in a while, perhaps reassure them that
+something is still going on.  (maybe based on the size of the make
+stdout/stderr files?)
