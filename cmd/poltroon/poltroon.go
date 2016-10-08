@@ -170,10 +170,11 @@ Copyright (c) 2016 Jeremy Saenz & Contributors
 			fmt.Printf("Created %d packages in %s\n", len(good), elapsed)
 		}
 
-		fmt.Printf("\nYou can now run:\n")
 		if len(good) != 0 {
+			fmt.Printf("\nAfter you look in %s and verify it looks good, run:\n", root)
 			fmt.Printf("    sudo pacman -U --noconfirm %s\n", strings.Join(good, " "))
 		}
+		fmt.Printf("\nTo clean up, run\n")
 		fmt.Printf("    rm -rf %s/*\n", root)
 
 		return nil
