@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/ginabythebay/poltroon"
+	"github.com/ginabythebay/poltroon/alpm"
 	"github.com/ginabythebay/poltroon/aur"
 	"github.com/ginabythebay/poltroon/exec"
-	"github.com/ginabythebay/poltroon/semver"
 	"github.com/ginabythebay/poltroon/tar"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -56,9 +56,6 @@ All rights reserved.
 
 For https://github.com/urfave/cli:
 Copyright (c) 2016 Jeremy Saenz & Contributors
-
-For https://github.com/blang/semver:
-Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
 `)
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
@@ -277,16 +274,9 @@ func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 	result := []*poltroon.AurPackage{}
 	for _, f := range foreign {
 		info, ok := allInfos[f.Name]
-		if ok {
-			aurNewer, err := semver.Version(info.Version).IsNewerThan(f.Version)
-			if err != nil {
-				output(fmt.Sprintf("Skipping %q because we were unable to compare local version %q to AUR version %q", f.Name, f.Version, info.Version))
-				continue
-			}
-			if aurNewer {
-				pkg := poltroon.NewAurPackage(root, f.Name, f.Version, info.Version, info.SnapshotURL)
-				result = append(result, pkg)
-			}
+		if ok && alpm.VerCmp(f.Version, info.Version) < 0 {
+			pkg := poltroon.NewAurPackage(root, f.Name, f.Version, info.Version, info.SnapshotURL)
+			result = append(result, pkg)
 		}
 	}
 	return result, nil
