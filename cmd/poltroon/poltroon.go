@@ -47,6 +47,18 @@ Foolishly upgrade AUR packages.
 6. At the end, we print out the command the user can run to install the packages.
 
 All the action happens in /tmp/poltroon/ with a sub-directory for each package and a logs directory within that that can be inspected.
+
+Copyrights from included software, in no particular order:
+
+For https://github.com/pkg/errors:
+Copyright (c) 2015, Dave Cheney <dave@cheney.net>
+All rights reserved.
+
+For https://github.com/urfave/cli:
+Copyright (c) 2016 Jeremy Saenz & Contributors
+
+For https://github.com/blang/semver:
+Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
 `)
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
