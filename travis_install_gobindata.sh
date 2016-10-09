@@ -9,14 +9,16 @@
 
 set -ev
 
-export GOPATH=$TRAVIS_BUILD_DIR/gosupport
-mkdir -p $GOPATH/src
-
-cd $GOPATH/src
-
 pkg="go-bindata"
+pth="github.com/jteeuwen/$pkg"
 version="3.0.5"
-wget "https://github.com/jteeuwen/$pkg/archive/v$version.tar.gz"
+
+export GOPATH=$TRAVIS_BUILD_DIR/gosupport
+mkdir -p "$(dirname $GOPATH/src/$pth)"
+
+cd "$(dirname $GOPATH/src/$pth)"
+
+wget "https://$pth/archive/v$version.tar.gz"
 
 tar xfz v$version.tar.gz
 mv $pkg-$version $pkg
