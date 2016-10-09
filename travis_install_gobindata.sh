@@ -19,6 +19,7 @@ version="3.0.5"
 wget "https://github.com/jteeuwen/$pkg/archive/v$version.tar.gz"
 
 tar xfz v$version.tar.gz
+mv $pkg-$version $pkg
 cd $pkg
 go install ./...
 
