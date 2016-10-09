@@ -12,6 +12,8 @@ addons:
     - autopoint
     - libarchive-dev
     - curl
+    # for debugging
+    - tree
     # for generating license information
     - make
     - go-bindata
