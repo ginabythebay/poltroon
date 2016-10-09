@@ -24,6 +24,7 @@ export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
 # Normally this would happen in the travis install step, but we
 # skipped that before (it would have failed because libalpm wasn't
 # available)
+make data
 go get -t -v ./...
 
 make all
