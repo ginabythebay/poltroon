@@ -20,7 +20,7 @@ cd $TRAVIS_BUILD_DIR
 # https://github.com/travis-ci/apt-package-whitelist/issues/3417 is
 # fixed.
 ./travis_install_gobindata.sh
-export $PATH=$TRAVIS_BUILD_DIR/gosupport:$PATH
+export PATH=$TRAVIS_BUILD_DIR/gosupport:$PATH
 
 headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm"
 libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
