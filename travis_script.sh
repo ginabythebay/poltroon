@@ -32,8 +32,9 @@ export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
 # available)
 make data
 
-# temporary for debuggin
+# temporary for debugging
 pwd
+cat bindata.go
 tree
 
 go get -t -v ./...
