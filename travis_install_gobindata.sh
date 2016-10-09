@@ -11,7 +11,7 @@ set -ev
 
 pkg="go-bindata"
 pth="github.com/jteeuwen/$pkg"
-version="3.0.5"
+version="3.0.7"
 
 export GOPATH="$HOME/gosupport"
 mkdir -p "$(dirname $GOPATH/src/$pth)"
