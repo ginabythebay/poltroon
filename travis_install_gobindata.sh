@@ -13,7 +13,7 @@ pkg="go-bindata"
 pth="github.com/jteeuwen/$pkg"
 version="3.0.5"
 
-export GOPATH=$TRAVIS_BUILD_DIR/gosupport
+export GOPATH="$HOME/gosupport"
 mkdir -p "$(dirname $GOPATH/src/$pth)"
 
 cd "$(dirname $GOPATH/src/$pth)"
