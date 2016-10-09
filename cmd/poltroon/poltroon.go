@@ -47,15 +47,6 @@ Foolishly upgrade AUR packages.
 6. At the end, we print out the command the user can run to install the packages.
 
 All the action happens in /tmp/poltroon/ with a sub-directory for each package and a logs directory within that that can be inspected.
-
-Copyrights from included software, in no particular order:
-
-For https://github.com/pkg/errors:
-Copyright (c) 2015, Dave Cheney <dave@cheney.net>
-All rights reserved.
-
-For https://github.com/urfave/cli:
-Copyright (c) 2016 Jeremy Saenz & Contributors
 `)
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
@@ -67,6 +58,10 @@ Copyright (c) 2016 Jeremy Saenz & Contributors
 			Name:  "makers",
 			Value: 3,
 			Usage: "Number of concurrent makers",
+		},
+		cli.BoolFlag{
+			Name:  "licenses",
+			Usage: "Print out license information and exit.",
 		},
 		cli.BoolFlag{
 			Name:  "skippgpcheck",
@@ -82,6 +77,11 @@ Copyright (c) 2016 Jeremy Saenz & Contributors
 		},
 	}
 	app.Action = func(c *cli.Context) error {
+		if c.Bool("licenses") {
+			printAllLicenses()
+			os.Exit(0)
+		}
+
 		start := time.Now()
 
 		root, err := getRoot()
@@ -181,6 +181,26 @@ Copyright (c) 2016 Jeremy Saenz & Contributors
 	}
 
 	app.Run(os.Args)
+}
+
+func printAllLicenses() {
+	PrintLicense("poltroon", "LICENSE")
+	for _, n := range poltroon.AssetNames() {
+		if n == "LICENSE" {
+			continue
+		}
+		PrintLicense(n, n)
+	}
+}
+
+func PrintLicense(titleName, assetName string) {
+	license, err := poltroon.Asset(assetName)
+	if err != nil {
+		fmt.Printf("Error finding asset %q: %+v", assetName, err)
+		os.Exit(-1)
+	}
+	fmt.Println()
+	fmt.Printf("LICENSE For %s:\n%s\n", titleName, license)
 }
 
 func startFetchers(e *exec.Exec, fetcherCnt int) {
