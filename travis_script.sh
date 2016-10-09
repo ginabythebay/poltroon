@@ -31,6 +31,11 @@ export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
 # skipped that before (it would have failed because libalpm wasn't
 # available)
 make data
+
+# temporary for debuggin
+pwd
+tree
+
 go get -t -v ./...
 
 make all
