@@ -27,16 +27,10 @@ libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
 export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
 
+make data
 # Normally this would happen in the travis install step, but we
 # skipped that before (it would have failed because libalpm wasn't
 # available)
-make data
-
-# temporary for debugging
-pwd
-cat bindata.go
-tree
-
 go get -t -v ./...
 
 make all
