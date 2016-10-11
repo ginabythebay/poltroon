@@ -16,6 +16,12 @@ make
 
 cd $TRAVIS_BUILD_DIR
 
+# TODO(gina) delete this and use apt once
+# https://github.com/travis-ci/apt-package-whitelist/issues/3417 is
+# fixed.
+./travis_install_gobindata.sh
+export PATH="$HOME/gosupport/bin:$PATH"
+
 headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm"
 libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
 export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
