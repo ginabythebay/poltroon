@@ -123,13 +123,8 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 
 		if !c.Bool("quiet") {
 			go func() {
-				ticker := time.NewTicker(time.Second * 10)
-				for range ticker.C {
-					s := updateState.String()
-					if s == "" {
-						return
-					}
-					fmt.Println(s)
+				for s := range updateState.Makes {
+					fmt.Print(s)
 				}
 			}()
 		}
