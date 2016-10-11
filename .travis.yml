@@ -14,7 +14,8 @@ addons:
     - curl
     # for generating license information
     - make
-    - go-bindata
+    # not yet!
+    # - go-bindata
 
 # TODO(gina) switch to using a submodule for this?  At least then we
 # would be using a known version of the source code
