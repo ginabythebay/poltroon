@@ -63,9 +63,11 @@ func (u *UpdateState) Finished(name string) {
 		duration := time.Since(start)
 		u.Makes <- fmt.Sprintf("Made %s in %s\n", name, duration)
 	}
-	u.Makes <- progress + "\r"
 	if done {
+		u.Makes <- ""
 		close(u.Makes)
+	} else {
+		u.Makes <- progress + "\r"
 	}
 	u.waitGroup.Done()
 }
