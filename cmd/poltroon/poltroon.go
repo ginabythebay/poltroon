@@ -48,6 +48,9 @@ Foolishly upgrade AUR packages.
 
 All the action happens in /tmp/poltroon/ with a sub-directory for each package and a logs directory within that that can be inspected.
 `)
+	app.ArgsUsage = strings.TrimSpace(`
+[packages] One or more named packages to fetch and make.  Not compatible with the --update flag.
+`)
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "fetchers",
@@ -66,6 +69,10 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		cli.BoolFlag{
 			Name:  "skippgpcheck",
 			Usage: "Turn off pgp checks",
+		},
+		cli.BoolFlag{
+			Name:  "update, u",
+			Usage: "Look for already-installed packages to update.  Not compatible with named packages as arguments",
 		},
 		cli.BoolFlag{
 			Name:  "noconfirm",
@@ -93,31 +100,48 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 		if err != nil {
 			fatal(err)
 		}
-		aurPkgs, err := queryUpdates(exec, root)
-		if err != nil {
-			fatal(err)
-		}
+		var aurPkgs []*poltroon.AurPackage
+		args := c.Args()
+		if c.Bool("update") {
+			if args.Present() {
+				fmt.Printf("--update not compatible with named packages and you specified %q\n", strings.Join(args, ", "))
+				os.Exit(1)
+			}
+			aurPkgs, err = fetchChangedPkgs(exec, root)
+			if err != nil {
+				fatal(err)
+			}
 
-		if len(aurPkgs) == 0 {
-			elapsed := time.Since(start)
-			fmt.Printf("Nothing to update!  Exiting in %s\n", elapsed)
-			os.Exit(0)
-		}
-
-		for _, a := range aurPkgs {
-			fmt.Println(a)
-		}
-
-		fmt.Println()
-		if c.Bool("noconfirm") {
-			fmt.Println("Proceeding to update all packages because --noconfirm was set...")
-		} else {
-			msg := fmt.Sprintf("Do you want to update these %d packages?", len(aurPkgs))
-			if !askForConfirmation(msg) {
+			if len(aurPkgs) == 0 {
+				elapsed := time.Since(start)
+				fmt.Printf("Nothing to update!  Exiting in %s\n", elapsed)
 				os.Exit(0)
 			}
+
+			for _, a := range aurPkgs {
+				fmt.Println(a)
+			}
+
+			fmt.Println()
+			if c.Bool("noconfirm") {
+				fmt.Println("Proceeding to update all packages because --noconfirm was set...")
+			} else {
+				msg := fmt.Sprintf("Do you want to update these %d packages?", len(aurPkgs))
+				if !askForConfirmation(msg) {
+					os.Exit(0)
+				}
+			}
+			fmt.Println()
+		} else {
+			if !args.Present() {
+				fmt.Println("You must either specify --update or list names of packages.  Nothing to do.")
+				os.Exit(1)
+			}
+			aurPkgs, err = fetchNamedPkgs(args, root)
+			if err != nil {
+				fatal(err)
+			}
 		}
-		fmt.Println()
 
 		updateState = poltroon.NewUpdateState(len(aurPkgs))
 
@@ -271,7 +295,29 @@ func makePackage(e *exec.Exec, skipPgpCheck bool, pkg *poltroon.AurPackage) {
 	}
 }
 
-func queryUpdates(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
+func fetchNamedPkgs(names []string, root string) ([]*poltroon.AurPackage, error) {
+	allInfos, err := aur.GetInfos(names)
+	if err != nil {
+		fatal(fmt.Sprintf("%+v: Get aur info for names", err))
+	}
+	result := []*poltroon.AurPackage{}
+	missing := []string{}
+	for _, n := range names {
+		info, ok := allInfos[n]
+		if !ok {
+			missing = append(missing, n)
+			continue
+		}
+		pkg := poltroon.NewAurPackage(root, n, "", info.Version, info.SnapshotURL)
+		result = append(result, pkg)
+	}
+	if len(missing) > 0 {
+		return nil, errors.Errorf("Could not find AUR entries for %q", strings.Join(missing, ", "))
+	}
+	return result, nil
+}
+
+func fetchChangedPkgs(e *exec.Exec, root string) ([]*poltroon.AurPackage, error) {
 	foreign, err := e.QueryForeignPackages()
 	if err != nil {
 		return nil, errors.Wrap(err, "queryUpdates")
