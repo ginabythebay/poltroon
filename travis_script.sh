@@ -7,6 +7,12 @@
 
 set -ev
 
+# TODO(gina) delete this and use apt once
+# https://github.com/travis-ci/apt-package-whitelist/issues/3417 is
+# fixed.
+./travis_install_gobindata.sh
+export PATH="$HOME/gosupport/bin:$PATH"
+
 make data
 
 make all
