@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ginabythebay/alpm"
 	"github.com/ginabythebay/poltroon"
-	"github.com/ginabythebay/poltroon/alpm"
 	"github.com/ginabythebay/poltroon/aur"
 	"github.com/ginabythebay/poltroon/exec"
 	"github.com/ginabythebay/poltroon/tar"
@@ -336,7 +336,7 @@ func fetchChangedPkgs(e *exec.Exec, root string) ([]*poltroon.AurPackage, error)
 	result := []*poltroon.AurPackage{}
 	for _, f := range foreign {
 		info, ok := allInfos[f.Name]
-		if ok && alpm.VerCmp(f.Version, info.Version) < 0 {
+		if ok && alpm.Less(f.Version, info.Version) {
 			pkg := poltroon.NewAurPackage(root, f.Name, f.Version, info.Version, info.SnapshotURL)
 			result = append(result, pkg)
 		}

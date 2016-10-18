@@ -7,30 +7,12 @@
 
 set -ev
 
-cd ./pacman
-./autogen.sh
-./configure
-
-cd lib/libalpm
-make
-
-cd $TRAVIS_BUILD_DIR
-
 # TODO(gina) delete this and use apt once
 # https://github.com/travis-ci/apt-package-whitelist/issues/3417 is
 # fixed.
 ./travis_install_gobindata.sh
 export PATH="$HOME/gosupport/bin:$PATH"
 
-headerdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm"
-libdir="$TRAVIS_BUILD_DIR/pacman/lib/libalpm/.libs"
-export CGO_CFLAGS="$CGO_CFLAGS -I${headerdir}"
-export CGO_LDFLAGS="$CGO_LDFLAGS -L${libdir}"
-
 make data
-# Normally this would happen in the travis install step, but we
-# skipped that before (it would have failed because libalpm wasn't
-# available)
-go get -t -v ./...
 
 make all

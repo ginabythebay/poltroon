@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "akZavWSb+O30hAXh+pLPKGI20vk=",
+			"path": "github.com/ginabythebay/alpm",
+			"revision": "b882059245694c2c6e3ff43783c572cb4d8dbc00",
+			"revisionTime": "2016-10-17T22:05:41Z"
+		},
+		{
 			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
 			"path": "github.com/pkg/errors",
 			"revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
