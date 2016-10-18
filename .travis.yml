@@ -9,7 +9,6 @@ addons:
     packages:
     # for generating license information
     - make
-    # not yet!
-    # - go-bindata
+    - go-bindata
 
 script: ./travis_script.sh
