@@ -116,7 +116,7 @@ func (e *Exec) Make(a *poltroon.AurPackage, skippgpcheck bool) error {
 		return errors.Wrapf(err, "globbing makepkg for %s.  See %s", a.Name, cmd.Dir)
 	}
 	if len(matches) != 1 {
-		return errors.Errorf("Expected exactly 1 match but got this instead: %v", matches)
+		return errors.Errorf("Expected exactly 1 match but got this instead: %v\n\nIf it is safe, you can consider something like pacman -U *.pkg.tar.xz", matches)
 	}
 
 	a.PkgPath = matches[0]
