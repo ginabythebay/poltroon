@@ -85,7 +85,7 @@ type VersionedPackage struct {
 	Version string
 }
 
-// Make runs makepkg on a fetched command.  If it is successful, a.PkgPath will be set
+// Make runs makepkg on a fetched command.  If it is successful, a.PkgPaths will be set
 // to the package we built.
 func (e *Exec) Make(a *poltroon.AurPackage, skippgpcheck bool) error {
 	cmd := exec.Command(e.makePkgPath, "--syncdeps", a.Name)
@@ -115,11 +115,11 @@ func (e *Exec) Make(a *poltroon.AurPackage, skippgpcheck bool) error {
 	if err != nil {
 		return errors.Wrapf(err, "globbing makepkg for %s.  See %s", a.Name, cmd.Dir)
 	}
-	if len(matches) != 1 {
-		return errors.Errorf("Expected exactly 1 match but got this instead: %v\n\nIf it is safe, you can consider something like pacman -U *.pkg.tar.xz", matches)
+	if len(matches) == 0 {
+		return errors.Errorf("Expected at least one match but got this instead: %v", matches)
 	}
 
-	a.PkgPath = matches[0]
+	a.PkgPaths = matches
 	return nil
 }
 

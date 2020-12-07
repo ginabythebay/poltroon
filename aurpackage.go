@@ -24,7 +24,7 @@ type AurPackage struct {
 	Root string
 
 	// set after a successful make
-	PkgPath string
+	PkgPaths []string
 }
 
 // NewAurPackage creates a new AurPackage.  The next step is to call PreparePackageDir.

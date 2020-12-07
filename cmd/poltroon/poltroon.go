@@ -166,10 +166,10 @@ All the action happens in /tmp/poltroon/ with a sub-directory for each package a
 
 		var good, bad []string
 		for _, pkg := range aurPkgs {
-			if pkg.PkgPath == "" {
+			if len(pkg.PkgPaths) == 0 {
 				bad = append(bad, pkg.Name)
 			} else {
-				good = append(good, pkg.PkgPath)
+				good = append(good, pkg.PkgPaths...)
 			}
 		}
 
@@ -264,12 +264,12 @@ func fetchPackage(e *exec.Exec, pkg *poltroon.AurPackage) {
 
 	ungzipper, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		err = errors.Wrapf(err, "%s: decompressing", pkg.Name, pkg.SnapshotURL)
+		err = errors.Wrapf(err, "%s: decompressing", pkg.Name)
 		return
 	}
 	err = tar.ExtractAll(ungzipper, pkg.Build())
 	if err != nil {
-		err = errors.Wrapf(err, "%s: extracting", pkg.Name, pkg.SnapshotURL)
+		err = errors.Wrapf(err, "%s: extracting", pkg.Name)
 		return
 	}
 }
